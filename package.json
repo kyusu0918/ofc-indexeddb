@@ -1,0 +1,53 @@
+{
+  "name": "@kyusu0918/ofc-indexeddb",
+  "version": "1.0.0",
+  "description": "A type-safe IndexedDB wrapper for TypeScript that provides typed store factories, simple CRUD methods and built-in logical delete support.",
+  "main": "dist/ofcIndexedDB.js",
+  "types": "dist/ofcIndexedDB.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/ofcIndexedDB.js",
+      "types": "./dist/ofcIndexedDB.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build",
+    "test": "jest",
+    "test:coverage": "jest --coverage"
+  },
+  "keywords": [
+    "indexeddb",
+    "typescript",
+    "crud",
+    "offline-storage",
+    "localdatabase",
+    "wrapper",
+    "store factory",
+    "logical delete"
+  ],
+  "author": "Kei Yusu <kyusu0918@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kyusu0918/ofc-indexeddb.git"
+  },
+  "homepage": "https://github.com/kyusu0918/ofc-indexeddb#readme",
+  "bugs": {
+    "url": "https://github.com/kyusu0918/ofc-indexeddb/issues"
+  },
+  "type": "module",
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "jest": "^30.2.0",
+    "jest-environment-jsdom": "^30.2.0",
+    "ts-jest": "^29.4.5",
+    "typescript": "^5.9.3"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "fake-indexeddb": "^6.2.5"
+  }
+}
