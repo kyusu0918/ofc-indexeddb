@@ -29,6 +29,89 @@ and zero external dependencies.
 
 ---
 
+## 💡 Why ofc-indexeddb?
+
+> A next-generation IndexedDB wrapper for developers who demand both type-safety and simplicity.
+
+Unlike most IndexedDB wrappers, **ofc-indexeddb is not just a Promise wrapper.**
+
+It’s a fully **type-safe, functionally pure API** that lets you express **any filter logic** — including regex, date range, and complex predicates — directly in TypeScript. Traditional libraries often make you adapt to their APIs; **ofc-indexeddb lets you use JavaScript itself as your query language.**
+
+---
+
+## 🔍 Feature Comparison
+
+| Feature | Dexie.js | idb | localforage | **ofc-indexeddb** |
+| :--- | :--- | :--- | :--- | :--- |
+| **TypeScript Support** | ⚠️ Partial | ❌ Minimal | ❌ None | ✅ **Full generics** |
+| **Logical Delete Built-in** | ❌ | ❌ | ❌ | ✅ **Yes** |
+| **Regex / Function Filters** | ❌ | ⚠️ Manual | ❌ | ✅ **Inline** (`(r) => /foo/.test(r.name)`) |
+| **Proxy-safe (Vue/React)** | ❌ | ❌ | ❌ | ✅ `isProxy` option |
+| **Pure Functional API** | ⚠️ Mixed | ✅ | ❌ | ✅ **100%** |
+| **DB Creation Syntax** | Imperative | Native | Hidden | ✅ Declarative `createStore()` |
+| **Dependencies** | Medium | Low | Medium | **Zero** |
+
+---
+
+## 🧠 Type-Safe by Design
+
+All operations are typed at compile time. If you access an unknown property or mismatched type, **TypeScript catches it.**
+
+```typescript
+// ❌ Compile-time error (nonexistent field)
+await Users.select(db, r => r.unknownField === 1);
+
+// ✅ Valid, fully typed
+await Users.select(db, r => /^[A-Z]/.test(r.name) && r.age >= 18);
+```
+
+This means `ofc-indexeddb` achieves practical type safety
+that no other IndexedDB library has reached yet.
+
+---
+
+## 💬 Why It Matters
+
+> Most IndexedDB wrappers wrap complexity. **ofc-indexeddb eliminates it — without losing type safety.**
+
+You can think of it as:
+
+> 🧩 “Dexie meets TypeScript generics and functional purity.”**
+
+No custom query syntax. No hidden ORM layer.
+
+Just **type-safe JavaScript** that works in any browser or Node environment.
+
+---
+
+## 🧪 Philosophy
+
+> **“Simplicity is not the absence of power — it’s the absence of noise.”**
+
+ofc-indexeddb is designed for developers who want **a predictable, zero-dependency, and composable way** to work with browser storage without magic or boilerplate.
+
+---
+
+## ⚡ Example Power Queries
+
+```typescript
+// Regex + logic combo
+const results = await Users.select(db, r =>
+    /^[AB]/.test(r.name) && r.age >= 18 && !r.is_delete
+);
+
+// Date range filtering
+const recent = await Sessions.select(db, r =>
+    new Date(r.timestamp) > new Date("2025-01-01")
+);
+
+// Complex logical filters
+const activeTitles = await Titles.select(db, r =>
+    !r.is_delete && /Project/i.test(r.title) && r.user_id === user.id
+);
+```
+
+---
 ## 📘 Installation
 
 ```bash
@@ -60,76 +143,114 @@ export const createStoreV1 = (db: IDBDatabase) => {
 };
 ```
 
-### 2️⃣ Connect and Perform Basic CRUD
+### 2️⃣ Recommended Usage: Type-Safe CRUD with Store Shortcuts
+
+We use the `defineStore()` shortcut to eliminate repeated store names and enforce the logical delete default.
 
 ```typescript
 // Open or create the DB (Version 1)
 const db = await ofcIndexedDB.connect('AppDB', 1, createStoreV1);
 
-/**
- * 1️⃣ Insert a new user and get the generated ID
- *  * NOTE: ofcIndexedDB.upsert() automatically generates ID, inserted, and updated timestamps.
- * Only custom fields are required for the initial insertion object.
- */
-const newUserId = await ofcIndexedDB.upsert<iUser>(db, 'users', {
-  name: 'Alice',
-  age: 25,
-} as iUser); // Use 'as iUser' to satisfy TS since required base fields are auto-generated
+// Define store shortcut and enable logical delete by default
+const Users = ofcIndexedDB.defineStore<iUser>('users', {
+    logicalDelete: true, // Users.delete() will default to soft delete
+});
 
 /**
- * 2️⃣ Retrieve and Update the record
- *  * `updated` timestamp is automatically refreshed upon save.
- */
-const user = await ofcIndexedDB.get<iUser>(db, 'users', newUserId);
+ * 1️⃣ Insert a new user and get the generated ID
+ * NOTE: Users.upsert() automatically generates ID, inserted, and updated timestamps.
+ */
+const newUserId = await Users.upsert(db, {
+  name: 'Alice',
+  age: 25,
+} as iUser); // Use 'as iUser' since required base fields are auto-generated
+
+/**
+ * 2️⃣ Retrieve and Update the record
+ * `updated` timestamp is automatically refreshed upon save.
+ */
+let user = await Users.get(db, newUserId);
 user.age = 26;
-await ofcIndexedDB.upsert<iUser>(db, 'users', user);
+await Users.upsert(db, user);
 
 /**
- * 3️⃣ Filter (WHERE equivalent)
- *  * `select()` retrieves non-deleted records by default.
- */
-const adults = await ofcIndexedDB.select<iUser>(
-  db,
-  'users',
-  (r) => r.age >= 20 // Filters for users older than 20
+ * 3️⃣ Filter (WHERE equivalent)
+ * select() retrieves non-deleted records by default (due to defineStore setting).
+ */
+const adults = await Users.select(
+  db,
+  (r) => r.age >= 20 // Filters for users older than 20
 );
 console.log(adults);
 
 /**
- * 4️⃣ Logical Delete (Soft Delete)
- *  * Marks a record as deleted (is_delete = true), updating `deleted` and `updated` timestamps.
- */
-await ofcIndexedDB.delete(db, 'users', newUserId, { logical: true });
+ * 4️⃣ Logical Delete (Soft Delete)
+ * Marks a record as deleted (is_delete = true), updating `deleted` and `updated` timestamps.
+ * The `logical: true` option is inherited from the Users shortcut definition.
+ */
+await Users.delete(db, newUserId);
 
 /**
- * 5️⃣ Verify Logical Deletion
- */
-const deletedUser = await ofcIndexedDB.get<iUser>(db, 'users', newUserId);
+ * 5️⃣ Verify Logical Deletion
+ */
+const deletedUser = await Users.get(db, newUserId);
 console.log(deletedUser.is_delete); // true
+```
+
+### 3️⃣ Unconstrained Query: The Power of select()
+
+(This section is separated to keep the full CRUD flow clean, but demonstrates the true power)
+
+```typescript
+// Select only records where name starts with 'B'.
+const activeUsers = await Users.select(db, (r) => r.name.startsWith('B'));
+
+// Regex + logic combo: Complex search using Regex, age, and manual logical delete check
+const results = await Users.select(db, r =>
+    /^[AB]/.test(r.name) && r.age >= 18 && !r.is_delete
+);
 ```
 
 ---
 
-## 🧩 Define Store Shortcuts (Recommended)
+## 🧩 Core Methods: Native CRUD Example
 
-Use `defineStore()` to create reusable, type-safe handlers for a specific store, eliminating the need to pass the store name repeatedly.
+For advanced users who prefer explicit control over store operations, the base methods remain fully accessible.
+
+This example demonstrates the core functionality of `ofcIndexedDB` using native methods, showing how to handle data with explicit store names.
 
 ```typescript
-// Define store shortcut for 'users'
-const Users = ofcIndexedDB.defineStore<iUser>('users', {
-  logicalDelete: true, // Default to logical delete for this store
-});
+// 1. Insert (Simple, typed call) - Explicitly pass the store name 'users'
+const newUserId = await ofcIndexedDB.upsert<iUser>(db, 'users', {
+    name: 'Bob',
+    age: 33,
+} as iUser);
 
-// 1. Insert (Simple, typed call)
-const newUserId = await Users.upsert(db, { name: 'Bob', age: 33 } as iUser);
+// 2. Logical Delete - Must explicitly pass the logical option
+await ofcIndexedDB.delete(db, 'users', newUserId, { logical: true });
 
-// 2. Logical Delete (Uses store default: logical=true)
-await Users.delete(db, newUserId);
-
-// 3. Select (Automatically excludes logically deleted records)
-const activeUsers = await Users.select(db, (r) => r.name.startsWith('B'));
+// 3. Select (Filter) - Must explicitly exclude deleted records if logical delete was used
+const activeUsers = await ofcIndexedDB.select<iUser>(db, 'users', (r) =>
+    r.name.startsWith('B') && !r.is_delete
+);
 console.log(activeUsers);
 ```
+
+---
+
+## Error Handling
+All CRUD methods return a Promise and throw `Error` objects when IndexedDB operations fail.
+Always wrap calls in `try...catch` when necessary.
+
+```typescript
+try {
+  const user = await ofcIndexedDB.get(db, "users", "001");
+} catch (err) {
+  console.error("Database error:", err);
+}
+```
+> All methods throw native `Error` objects and never silently fail.
+> You always get clear exception messages for easier debugging.
 
 ---
 
@@ -174,7 +295,6 @@ ofcIndexedDB.ts  |  86.02  |   79.16  |   69.23  |  96.39
 ## 📁 Project Structure
 
 ```
-## 📁 Project Structure
 ofc-indexeddb/
 ├── src/
 │   └── ofcIndexedDB.ts
@@ -205,4 +325,4 @@ Part of the **Oresama Foundation Code** series.
 
 ---
 
-_“Typed. Simple. Persistent. — A new standard for browser storage.”_
+_“Typed. Simple. Persistent. — A new standard for type-safe browser storage.”_
