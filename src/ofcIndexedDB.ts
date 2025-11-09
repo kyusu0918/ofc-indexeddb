@@ -41,6 +41,7 @@ export const ofcIndexedDB = {
    * @param version Version
    * @callback createFunc Function for DB creation (onupgradeneeded)
    * @return DB object
+   * @throws Error - when Failed to create to the database.
    * @since 2025/11/04
    * @author Kei Yusu
    *
@@ -60,13 +61,16 @@ export const ofcIndexedDB = {
       const dbVersion = version ? version : ofcIndexedDB.version;
 
       // Open the database
-      const openResult: IDBOpenDBRequest = window.indexedDB.open(dbName, dbVersion);
+      const openResult: IDBOpenDBRequest = (globalThis.indexedDB ?? window.indexedDB).open(dbName, dbVersion);
 
       // Connection success
       openResult.onsuccess = (e: Event) => { resolve(((e.target as IDBOpenDBRequest).result as IDBDatabase)); }
 
       // Connection error
       openResult.onerror = (e: Event) => { reject(new Error("Failed to connect to the database.")); }
+
+      // Connection block
+      openResult.onblocked = () => { console.warn(`Database "${dbName}" Connection was blocked by an open connection.`); }
 
       // If a DB creation function is provided
       if(createFunc){
@@ -111,6 +115,7 @@ export const ofcIndexedDB = {
    *
    * @param name DB name
    * @return true:Success false:Failure
+   * @throws Error - when Failed to delete the database.
    * @since 2025/11/04
    * @author Kei Yusu
    *
@@ -132,6 +137,9 @@ export const ofcIndexedDB = {
       // Deletion error
       deleteResult.onerror = (e: Event) => { reject(new Error("Failed to delete the database.")); }
 
+      // Deletion block
+      deleteResult.onblocked = () => { console.warn(`Database "${dbName}" deletion was blocked by an open connection.`); }
+
     })
 
   },
@@ -144,6 +152,7 @@ export const ofcIndexedDB = {
    * @param key Key to retrieve (id or index key)
    * @param index Index name
    * @return Retrieved record
+   * @throws Error - when Failed to get record.
    * @since 2025/11/04
    * @author Kei Yusu
    *
@@ -211,6 +220,7 @@ export const ofcIndexedDB = {
    * @param db DB object
    * @param store Object store name
    * @return Record count
+   * @throws Error - when Failed to count records.
    * @since 2025/11/04
    * @author Kei Yusu
    *
@@ -247,6 +257,7 @@ export const ofcIndexedDB = {
    * @param from Start key value (optional)
    * @param to End key value (optional)
    * @return Retrieved records array
+   * @throws Error - when Failed to list records.
    * @since 2025/11/04
    * @author Kei Yusu
    *
@@ -327,6 +338,7 @@ export const ofcIndexedDB = {
    * @param options Options setting
    * @param options.includeDeleted Flag to include logically deleted records (reconstructed via JSON if true)
    * @return Array of records matching the condition
+   * @throws Error - when Failed to select records.
    * @since 2025/11/08
    * @author Kei Yusu
    *
@@ -431,6 +443,7 @@ export const ofcIndexedDB = {
    * @param options.genId ID generation function (defaults to crypto.randomUUID)
    * @param options.now Datetime generation function (defaults to ISO format current time)
    * @return New or updated record ID
+   * @throws Error - when Failed to insert/update record.
    * @since 2025/11/04
    * @author Kei Yusu
    *
@@ -508,6 +521,7 @@ export const ofcIndexedDB = {
    * @param options.logical Logical deletion flag (true for logical delete, false/omitted for physical)
    * @param options.now Datetime generation function (defaults to ISO format current time)
    * @return true:Success / false:Failure
+   * @throws Error - when Failed to delete record.
    * @since 2025/11/04
    * @author Kei Yusu
    *
@@ -578,6 +592,7 @@ export const ofcIndexedDB = {
    * @param db DB instance
    * @param store Object store name
    * @return true:Success / false:Failure
+   * @throws Error - when Failed to clear records.
    * @since 2025/11/07
    * @author Kei Yusu
    *
