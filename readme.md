@@ -315,6 +315,8 @@ ofc-indexeddb/
 
 * [API Reference (English)](./docs/API.en.md)
 * [APIリファレンス（日本語）](./docs/API.ja.md)
+* [React & Vue 3 Integration Guide (English)](./docs/GUIDE.ReactVue.en.md)
+* [React & Vue 3 統合ガイド (日本語)](./docs/GUIDE.ReactVue.ja.md)
 
 ---
 
