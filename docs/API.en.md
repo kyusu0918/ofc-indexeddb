@@ -6,10 +6,10 @@
 
 ## 🗂️ Base Interface
 
-All data models stored in the database must extend the **`iofcRecBase`** interface, which includes the following metadata fields:
+All data models stored in the database must extend the **`iofcRec`** interface, which includes the following metadata fields:
 
 ```typescript
-export interface iofcRecBase {
+export interface iofcRec {
   id: string;       // Unique record ID (auto-generated using crypto.randomUUID)
   inserted: string; // Insertion datetime (auto-generated in ISO 8601 format)
   updated: string;  // Update datetime (auto-updated in ISO 8601 format)
@@ -51,7 +51,7 @@ const db = await ofcIndexedDB.connect(
 
 | Method Name | Description | Arguments | Returns |
 | :--- | :--- | :--- | :--- |
-| **`upsert<T>`** | Inserts or updates a record (Insert if ID does not exist, Update if ID exists). | `db`: DB object<br>`store`: Store name<br>`rec`: Record to insert/update (must extend `iofcRecBase`)<br>`options?`: Options for ID/datetime generation, Proxy unwrap flag, etc. | `Promise<string>` (Record ID) |
+| **`upsert<T>`** | Inserts or updates a record (Insert if ID does not exist, Update if ID exists). | `db`: DB object<br>`store`: Store name<br>`rec`: Record to insert/update (must extend `iofcRec`)<br>`options?`: Options for ID/datetime generation, Proxy unwrap flag, etc. | `Promise<string>` (Record ID) |
 | **`get<T>`** | Retrieves a single record using the ID or an index key. | `db`: DB object<br>`store`: Store name<br>`key`: Search key (ID or index key)<br>`index?`: Name of the index to use | `Promise<T>` (returns `{}` if not found) |
 | **`list<T>`** | Retrieves multiple records as an array, optionally by specifying a key range. | `db`: DB object<br>`store`: Store name<br>`index?`: Name of the index to use<br>`from?`: Start key of the range<br>`to?`: End key of the range | `Promise<T[]>` |
 | **`select<T>`** | Filters records (WHERE clause equivalent) using a condition function and retrieves the matching array. | `db`: DB object<br>`store`: Store name<br>`where`: Condition function (`(record: T) => boolean`)<br>`options.includeDeleted?`: Flag to include logically deleted records | `Promise<T[]>` |
@@ -60,7 +60,7 @@ const db = await ofcIndexedDB.connect(
 
 ---
 
-### 3. Store Definition Shortcuts (Recommended)
+### 3. Store Definition Shortcuts
 
 | Method Name | Description | Arguments | Returns |
 | :--- | :--- | :--- | :--- |
@@ -88,4 +88,49 @@ const Users = ofcIndexedDB.defineStore<iUser>('users', {
 // Store name 'users' is no longer needed
 const user = await Users.get(db, 'user-id-001');
 await Users.delete(db, 'user-id-001'); // Logical delete is executed
+```
+
+---
+
+### 4. bindStore<T> — Pre-bound Store API (Recommended)
+
+Similar to `defineStore`, but automatically binds a specific `IDBDatabase` instance, so you can omit the `db` parameter in all calls.
+
+| Method Name | Description | Returns |
+| :--- | :--- | :--- |
+| **`bindStore<T>(db, store, defaults?)`** | Generates a type-safe CRUD operation object pre-bound to the specified DB. | Type-safe CRUD object |
+
+* `list(index?, from?, to?)`
+* `select(where?)`
+* `get(key, index?)`
+* `count(db)`
+* `upsert(rec, isProxy?)`
+* `delete(key)` *Behavior follows `defaults.logicalDelete` setting.*
+* `clear(db)`
+```typescript
+// Example: pre-bound store
+const db = await ofcIndexedDB.connect('AppDB', 1, createStoreV1);
+const Users = ofcIndexedDB.bindStore<iUser>(db, 'users');
+
+// You can now call methods without passing 'db'
+await Users.upsert({ name: 'Alice', age: 25, city: 'Tokyo' });
+const list = await Users.select(r => !r.is_delete);
+await Users.delete('user-id-001');
+
+// Example: pre-bound store with expressive type-safe query
+const db = await ofcIndexedDB.connect('AppDB', 1, createStoreV1);
+const Users = ofcIndexedDB.bindStore<iUser>(db, 'users');
+
+// Insert records
+await Users.upsert({ name: 'Alice', age: 25, city: 'Tokyo' });
+await Users.upsert({ name: 'Bob', age: 30, city: 'Osaka' });
+await Users.upsert({ name: 'Charlie', age: 28, city: 'Tokyo' });
+
+// ✅ The power of select()
+const tokyoUsers = await Users.select(r => r.city === 'Tokyo' && !r.is_delete);
+console.log(tokyoUsers.map(u => u.name));
+// → ["Alice", "Charlie"]
+
+// You can also perform logical delete without specifying db
+await Users.delete(tokyoUsers[0].id);
 ```
