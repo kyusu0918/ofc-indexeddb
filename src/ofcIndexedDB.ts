@@ -8,13 +8,18 @@
  * 
  *********************************************************************************/
 // Base record interface
-export interface iofcRecBase {
+export interface iofcRec {
   id: string;
   inserted: string;
   updated: string;
   deleted: string;
   is_delete: boolean;
 }
+
+// Type helper
+export type tofcStore<T extends iofcRec> = ReturnType<
+  typeof ofcIndexedDB.bindStore<T>
+>;
 
 /********************************************************************************
  * ofcIndexedDB
@@ -262,7 +267,7 @@ export const ofcIndexedDB = {
    * @author Kei Yusu
    *
    *********************************************************************************/
-  list: async <T extends iofcRecBase>(
+  list: async <T extends iofcRec>(
     db: IDBDatabase,
     store: string,
     index?: string|undefined,
@@ -350,10 +355,10 @@ export const ofcIndexedDB = {
    * record => record.title.includes("Travel") && !record.is_delete
    * );
    *********************************************************************************/
-  select: async <T extends iofcRecBase>(
+  select: async <T extends iofcRec>(
     db: IDBDatabase,
     store: string,
-    where: (record: T) => boolean,
+    where: (rec: T) => boolean,
     options?: {
       includeDeleted?: boolean
     }
@@ -392,10 +397,10 @@ export const ofcIndexedDB = {
         }
 
         // Get record value
-        const record = cursor.value as T;
+        const rec = cursor.value as T;
 
         // If logically deleted records are not included, skip logically deleted records
-        if(!includeDeleted && record.is_delete){
+        if(!includeDeleted && rec.is_delete){
 
           // Move to the next record
           cursor.continue();
@@ -412,7 +417,7 @@ export const ofcIndexedDB = {
           const condition = (where && typeof where === "function") ? where : (() => true);
 
           // If the condition function is met, add to the result set
-          if (condition(record)) resultSet.push(record);
+          if (condition(rec)) resultSet.push(rec);
 
         } catch (err) {
 
@@ -457,10 +462,10 @@ export const ofcIndexedDB = {
    * now: ofcDateTime.getNowDateTimeString
    * });
    *********************************************************************************/
-  upsert: async <T extends iofcRecBase>(
+  upsert: async <T extends iofcRec>(
     db: IDBDatabase,
     store: string,
-    rec: T,
+    rec: Partial<T> & { id?: T["id"] },
     options?: {
       isProxy?: boolean;
       genId?: () => string;
@@ -468,47 +473,66 @@ export const ofcIndexedDB = {
     }
   ): Promise<string> => {
 
+    // Set options
+    const genId = options?.genId ?? (() => crypto.randomUUID());
+    const now = options?.now ?? (() => new Date().toISOString());
+    const isProxy = options?.isProxy ?? false;
+
+    // If the object is wrapped by a Proxy, reconstruct the object forcefully via a JSON string
+    // * This is necessary if wrapped via vue3's reactive
+    const upsertRec = isProxy ? JSON.parse(JSON.stringify(rec)) : rec;
+
+    // Merge record
+    let mergeRec = { ...upsertRec } as T;
+
+    // If ID is specified
+    if((upsertRec as iofcRec).id){
+
+      // Get existing record
+      const existRec = await ofcIndexedDB.get<T>(db, store, (upsertRec as iofcRec).id);
+
+      // If existing record found
+      if(existRec.id){
+
+        // Use existRec as the base and overwrite with values from upsertRec
+        mergeRec = { ...existRec, ...upsertRec } as T;
+
+      }
+
+    }
+
+    // Set ID
+    (mergeRec as iofcRec).id = !(mergeRec as iofcRec).id ? genId() : (mergeRec as iofcRec).id;
+
+    // Set insertion date/time
+    (mergeRec as iofcRec).inserted = !(mergeRec as iofcRec).inserted ? now() : (mergeRec as iofcRec).inserted;
+
+    // Set update date/time
+    (mergeRec as iofcRec).updated = (upsertRec as iofcRec).updated ? (upsertRec as iofcRec).updated : now();
+
+    // Set deletion date/time (blank for extension)
+    (mergeRec as iofcRec).deleted = !(mergeRec as iofcRec).deleted ? "" : (mergeRec as iofcRec).deleted;
+
+    // Set deletion flag (False for extension)
+    (mergeRec as iofcRec).is_delete = !(mergeRec as iofcRec).is_delete ? false : (mergeRec as iofcRec).is_delete;
+
+    // Get object store
+    const objectStore: IDBObjectStore = db.transaction(store, "readwrite").objectStore(store);
+
     // Wrap in Promise
     return new Promise<string>((resolve, reject) => {
 
-      // Set options
-      const genId = options?.genId ?? (() => crypto.randomUUID());
-      const now = options?.now ?? (() => new Date().toISOString());
-      const isProxy = options?.isProxy ?? false;
-
-      // If the object is wrapped by a Proxy, reconstruct the object forcefully via a JSON string
-      // * This is necessary if wrapped via vue3's reactive
-      const upsertRec = isProxy ? JSON.parse(JSON.stringify(rec)) : rec;
-
-      // Set ID
-      (upsertRec as iofcRecBase).id = !(upsertRec as iofcRecBase).id ? genId() : (upsertRec as iofcRecBase).id;
-
-      // Set insertion date/time
-      (upsertRec as iofcRecBase).inserted = !(upsertRec as iofcRecBase).inserted ? now() : (upsertRec as iofcRecBase).inserted;
-
-      // Set update date/time
-      (upsertRec as iofcRecBase).updated = now();
-
-      // Set deletion date/time (blank for extension)
-      (upsertRec as iofcRecBase).deleted = !(upsertRec as iofcRecBase).deleted ? "" : (upsertRec as iofcRecBase).deleted;
-
-      // Set deletion flag (False for extension)
-      (upsertRec as iofcRecBase).is_delete = !(upsertRec as iofcRecBase).is_delete ? false : (upsertRec as iofcRecBase).is_delete;
-
-      // Get object store
-      const objectStore: IDBObjectStore = db.transaction(store, "readwrite").objectStore(store);
-
       // Add or update
-      const request:IDBRequest = objectStore.put(upsertRec);
+      const request:IDBRequest = objectStore.put(mergeRec);
 
       // Add/update success event
-      request.onsuccess = (e: Event) => { resolve((upsertRec as iofcRecBase).id); };
+      request.onsuccess = (e: Event) => { resolve((mergeRec as iofcRec).id); };
 
       // Add/update failure event
       request.onerror = (e: Event) => { reject(new Error("Failed to insert/update record.")); };
 
     })
-
+ 
   },
 
   /********************************************************************************
@@ -536,7 +560,6 @@ export const ofcIndexedDB = {
     }
   ): Promise<boolean> => {
 
-
     // Set options
     const logical = options?.logical ?? false;
     const now = options?.now ?? (() => new Date().toISOString());
@@ -544,20 +567,8 @@ export const ofcIndexedDB = {
     // If logical deletion
     if (logical) {
 
-      // Retrieve record
-      const record = await ofcIndexedDB.get<iofcRecBase>(db, store, key);
-
-      // Return false if record is not found
-      if (!record.id) return false;
-
-      // Set deleted flag
-      record.is_delete = true;
-
-      // Set deletion date/time
-      record.deleted = now();
-
       // Update record
-      await ofcIndexedDB.upsert<iofcRecBase>(db, store, record, {now});
+      await ofcIndexedDB.upsert<iofcRec>(db, store, {id: key as string, is_delete: true, deleted: now() }, {now});
 
       // Set return value
       return true;
@@ -638,14 +649,14 @@ export const ofcIndexedDB = {
    * const list = await Titles.select(db, r => !r.is_delete);
    * await Titles.delete(db, "001"); 
    *********************************************************************************/
-  defineStore: function <T extends iofcRecBase>(
+  defineStore: <T extends iofcRec>(
     store: string,
     defaults?: {
       genId?: () => string;
       now?: () => string;
       logicalDelete?: boolean
     }
-  ) {
+  ) => {
 
     // Define default functions (secured within scope)
     const genId = defaults?.genId ?? (() => crypto.randomUUID());
@@ -654,34 +665,20 @@ export const ofcIndexedDB = {
 
     // Set return value
     return {
-      /**********************
-       * Get all records
-       **********************/
+
       list: (db: IDBDatabase, index?: string, from?: string | number, to?: string | number): Promise<T[]> =>
         ofcIndexedDB.list<T>(db, store, index, from, to),
 
-      /**********************
-       * Get by condition (WHERE equivalent)
-       **********************/
-      select: (db: IDBDatabase, where?: (record: T) => boolean): Promise<T[]> =>
+      select: (db: IDBDatabase, where?: (rec: T) => boolean): Promise<T[]> =>
         ofcIndexedDB.select<T>(db, store, where ?? (() => true), { includeDeleted: !logicalDelete }),
 
-      /**********************
-       * Get single record
-       **********************/
       get: (db: IDBDatabase, key: string | number, index?: string): Promise<T> =>
         ofcIndexedDB.get<T>(db, store, key, index),
 
-      /**********************
-       * Get count
-       **********************/
       count: (db: IDBDatabase): Promise<number> =>
         ofcIndexedDB.count(db, store),
 
-      /**********************
-       * Add / Update
-       **********************/
-      upsert: (db: IDBDatabase, rec: T, isProxy?: boolean): Promise<string> => {
+      upsert: (db: IDBDatabase, rec: Partial<T> & { id?: T["id"] }, isProxy?: boolean): Promise<string> => {
         const options = {
           // Conditionally spread isProxy if it is defined
           ...(isProxy !== undefined ? { isProxy } : {}),
@@ -691,17 +688,70 @@ export const ofcIndexedDB = {
         return ofcIndexedDB.upsert<T>(db, store, rec, options);
       },
 
-      /**********************
-       * Delete
-       **********************/
       delete: (db: IDBDatabase, key: string | number): Promise<boolean> =>
         ofcIndexedDB.delete(db, store, key, {logical: logicalDelete, now} ),
 
-      /**********************
-       * Clear all (truncate)
-       **********************/
       clear: (db: IDBDatabase): Promise<boolean> =>
         ofcIndexedDB.clear(db, store),
+
+    } as const;
+
+  },
+
+  /********************************************************************************
+   * Define Store with DB (For framework integration)
+   * Binds the IDBDatabase instance to the store methods.
+   *
+   * @param db DB object (Required for binding)
+   * @param store Object store name
+   * @param defaults Default options setting
+   * @return Type-safe operation object without requiring the 'db' argument
+   * @since 2025/11/10
+   * @author Kei Yusu
+   *
+   * @example
+   * // Bind 'db' object to the Users object once
+   * const Users = ofcIndexedDB.defineStoreWithDB<iUser>(db, "users");
+   * // Use without passing 'db'
+   * const list = await Users.list();
+   *********************************************************************************/
+  bindStore: <T extends iofcRec>(
+    db: IDBDatabase,
+    store: string,
+    defaults?: {
+      genId?: () => string;
+      now?: () => string;
+      logicalDelete?: boolean
+    }
+  ) => {
+
+    // Reuse the logic from defineStore (creates the method object that requires 'db' as first arg)
+    const definedStore = ofcIndexedDB.defineStore<T>(store, defaults);
+
+    // Bind the 'db' argument to all methods and remove it from the signature
+    return {
+
+      list: (index?: string, from?: string | number, to?: string | number): Promise<T[]> =>
+        definedStore.list(db, index, from, to),
+
+      select: (where?: (rec: T) => boolean): Promise<T[]> =>
+        definedStore.select(db, where),
+
+      get: (key: string | number, index?: string): Promise<T> =>
+        definedStore.get(db, key, index),
+
+      count: (): Promise<number> =>
+        definedStore.count(db),
+
+      upsert: (rec: Partial<T> & { id?: T["id"] }, isProxy?: boolean): Promise<string> =>
+        definedStore.upsert(db, rec, isProxy),
+
+      delete: (key: string | number): Promise<boolean> =>
+        definedStore.delete(db, key),
+
+      clear: (): Promise<boolean> =>
+        definedStore.clear(db),
+
     } as const;
 
   },
