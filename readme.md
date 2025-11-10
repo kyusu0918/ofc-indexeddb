@@ -124,13 +124,13 @@ npm install @kyusu0918/ofc-indexeddb
 
 ### 1️⃣ Define Data Models & Schema
 
-All data models must extend `iofcRecBase` to inherit metadata fields (`id`, `inserted`, `updated`, `deleted`, `is_delete`).
+All data models must extend `iofcRec` to inherit metadata fields (`id`, `inserted`, `updated`, `deleted`, `is_delete`).
 
 ```typescript
-import ofcIndexedDB, { iofcRecBase } from '@kyusu0918/ofc-indexeddb';
+import ofcIndexedDB, { iofcRec } from '@kyusu0918/ofc-indexeddb';
 
-// Define Data Model (must extend iofcRecBase)
-interface iUser extends iofcRecBase {
+// Define Data Model (must extend iofcRec)
+interface iUser extends iofcRec {
   name: string;
   age: number;
 }
@@ -143,57 +143,57 @@ export const createStoreV1 = (db: IDBDatabase) => {
 };
 ```
 
-### 2️⃣ Recommended Usage: Type-Safe CRUD with Store Shortcuts
+### 2️⃣ Recommended Usage: Type-Safe CRUD with DB-Bound Store (`bindStore`)
 
-We use the `defineStore()` shortcut to eliminate repeated store names and enforce the logical delete default.
+When integrating with application frameworks (like React or Vue) where you want the store layer to manage the `db` instance, using `bindStore()` to bind the `db` instance to the store object is ideal. This eliminates the need to pass the `db` argument in subsequent CRUD operations.
 
 ```typescript
-// Open or create the DB (Version 1)
+// 1. Establish DB connection (Version 1)
 const db = await ofcIndexedDB.connect('AppDB', 1, createStoreV1);
 
-// Define store shortcut and enable logical delete by default
-const Users = ofcIndexedDB.defineStore<iUser>('users', {
+// 2. Bind the DB instance and define the store shortcut
+// Using bindStore() causes the generated object (Users) to hold the db instance.
+const Users = ofcIndexedDB.bindStore<iUser>(db, 'users', {
     logicalDelete: true, // Users.delete() will default to soft delete
 });
 
 /**
  * 1️⃣ Insert a new user and get the generated ID
- * NOTE: Users.upsert() automatically generates ID, inserted, and updated timestamps.
+ * NOTE: Users.upsert() automatically generates ID and timestamps.
+ * **No db argument is required.**
  */
-const newUserId = await Users.upsert(db, {
+const newUserId = await Users.upsert({
   name: 'Alice',
   age: 25,
 } as iUser); // Use 'as iUser' since required base fields are auto-generated
 
 /**
  * 2️⃣ Retrieve and Update the record
- * `updated` timestamp is automatically refreshed upon save.
+ * The `updated` timestamp is automatically refreshed upon save.
  */
-let user = await Users.get(db, newUserId);
+let user = await Users.get(newUserId);
 user.age = 26;
-await Users.upsert(db, user);
+await Users.upsert(user); // **No db argument required**
 
 /**
  * 3️⃣ Filter (WHERE equivalent)
- * select() retrieves non-deleted records by default (due to defineStore setting).
+ * select() retrieves non-deleted records by default.
  */
 const adults = await Users.select(
-  db,
   (r) => r.age >= 20 // Filters for users older than 20
-);
+); // **No db argument required**
 console.log(adults);
 
 /**
  * 4️⃣ Logical Delete (Soft Delete)
  * Marks a record as deleted (is_delete = true), updating `deleted` and `updated` timestamps.
- * The `logical: true` option is inherited from the Users shortcut definition.
  */
-await Users.delete(db, newUserId);
+await Users.delete(newUserId); // **No db argument required**
 
 /**
  * 5️⃣ Verify Logical Deletion
  */
-const deletedUser = await Users.get(db, newUserId);
+const deletedUser = await Users.get(newUserId);
 console.log(deletedUser.is_delete); // true
 ```
 
@@ -203,10 +203,10 @@ console.log(deletedUser.is_delete); // true
 
 ```typescript
 // Select only records where name starts with 'B'.
-const activeUsers = await Users.select(db, (r) => r.name.startsWith('B'));
+const activeUsers = await Users.select((r) => r.name.startsWith('B'));
 
 // Regex + logic combo: Complex search using Regex, age, and manual logical delete check
-const results = await Users.select(db, r =>
+const results = await Users.select(r =>
     /^[AB]/.test(r.name) && r.age >= 18 && !r.is_delete
 );
 ```
@@ -283,11 +283,11 @@ Example result (indicating full functionality and high coverage):
 
 ```
  PASS  tests/ofcIndexedDB.test.ts
-  Tests:        18 passed, 18 total
+  Tests:        19 passed, 19 total
 
 -----------------|---------|----------|---------|---------
 File             | % Stmts | % Branch | % Funcs | % Lines
-ofcIndexedDB.ts  |  86.02  |   79.16  |   69.23  |  96.39
+ofcIndexedDB.ts  |  86.92  |   81.7   |  76.19  |  95.23
 ```
 
 ---
