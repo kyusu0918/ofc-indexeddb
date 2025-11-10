@@ -22,7 +22,7 @@ and zero external dependencies.
 * ✅ **Type-safe CRUD operations** for IndexedDB.
 * 🧩 **Promise-based async API**.
 * 🧠 **Logical deletion** (soft delete with `is_delete` + timestamp).
-* 🧱 **Schema factory** via `defineStore()` for reusable, typed shortcuts.
+* 🧱 **Schema factory** via `bindStore()` for reusable, typed shortcuts.
 * 🧮 Built-in date (`now`) and ID auto-generation (`crypto.randomUUID`).
 * 🔒 **Zero dependency**, minimal footprint.
 * 🧪 **Fully covered by Jest tests** (96%+ line coverage).
