@@ -283,7 +283,7 @@ Example result (indicating full functionality and high coverage):
 
 ```
  PASS  tests/ofcIndexedDB.test.ts
-  Tests:        19 passed, 19 total
+  Tests:        22 passed, 22 total
 
 -----------------|---------|----------|---------|---------
 File             | % Stmts | % Branch | % Funcs | % Lines
