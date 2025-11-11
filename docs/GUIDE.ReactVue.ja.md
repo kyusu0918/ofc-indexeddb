@@ -143,6 +143,17 @@ export function useUsersStore() {
 }
 ```
 
+## 🔹`isProxy`（任意、省略時 false）
+
+>渡されたオブジェクトが Vue の `ref()` / `reactive()` による Proxy である場合、
+保存前に安全に展開（unwrap）してから IndexedDB に登録します。
+通常のプレーンオブジェクトの場合は不要です。
+
+```ts
+// Vue で Proxy オブジェクトを直接渡す場合のみ true
+await store.upsert(users.value[0], true);
+```
+
 ### 3️⃣ コンポーネントで使用する
 ```ts
 <!-- UserList.vue -->
@@ -167,7 +178,8 @@ const { users, add, remove } = useUsersStore();
 ✅ Vue のリアクティビティにより、IndexedDB の変更が即座に UI に反映されます。
 
 ---
-## ⚙️ ベストプラクティス（v1.0.0）
+
+## ⚙️ ベストプラクティス
 | 項目 | 推奨内容 |
 |-------|----------------|
 | **アプリごとに1つの接続** | `connect()` は起動時に1回呼び出し、DB インスタンスを再利用する。 |

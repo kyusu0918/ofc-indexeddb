@@ -1,4 +1,4 @@
-# ⚛️ React & Vue 3 Integration Guide (ofc-indexeddb v1.0.0)
+# ⚛️ React & Vue 3 Integration Guide
 
 > How to integrate **ofc-indexeddb** with React and Vue 3 — fully type-safe, reactive, and minimal.
 
@@ -140,6 +140,16 @@ export function useUsersStore() {
 }
 ```
 
+## 🔹`isProxy` （optional, default: false）
+
+>If `true`, the given object is treated as a Vue Proxy or reactive reference, and will be safely unwrapped before being stored in IndexedDB.
+Useful when using Vue's `ref()` or `reactive()` directly.
+
+```ts
+// Vue で Proxy オブジェクトを直接渡す場合のみ true
+await store.upsert(users.value[0], true);
+```
+
 ### 3️⃣ Use it in your component
 ```ts
 <!-- UserList.vue -->
@@ -164,7 +174,7 @@ const { users, add, remove } = useUsersStore();
 ✅ Vue’s reactivity ensures automatic UI updates when IndexedDB data changes.
 
 ---
-## ⚙️ Best Practices (v1.0.0)
+## ⚙️ Best Practices
 | Topic | Recommendation |
 |-------|----------------|
 | **Single connection per app** | Call `connect()` once at startup and reuse the DB instance. |
