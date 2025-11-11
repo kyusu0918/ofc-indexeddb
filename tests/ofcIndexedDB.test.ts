@@ -3,12 +3,12 @@
 // ✅ Complete test suite for ofcIndexedDB (full + extra coverage)
 // ---------------------------------------------------------
 import 'fake-indexeddb/auto';
-import ofcIndexedDB, { iofcRec } from '../src/ofcIndexedDB';
+import ofcIndexedDB, { OfcRec } from '../src/ofcIndexedDB';
 
 // ---------------------------------------------------------
 // Test Model
 // ---------------------------------------------------------
-interface iUser extends iofcRec {
+interface iUser extends OfcRec {
   name: string;
   age: number;
   city: string;
@@ -245,7 +245,7 @@ describe('ofcIndexedDB - Additional branch coverage', () => {
   const DB_NAME2 = 'TestDB_ListRange_Count_Clear';
   const STORE = 'users';
 
-  interface iUser extends iofcRec {
+  interface iUser extends OfcRec {
     name: string;
     age: number;
     city: string;
@@ -318,7 +318,7 @@ describe('ofcIndexedDB - bindStore full API coverage', () => {
   const NOW = () => '2025-11-10T15:00:00Z';
   const LATER = () => '2025-11-10T15:05:00Z';
 
-  interface iUser extends iofcRec {
+  interface iUser extends OfcRec {
     name: string;
     age: number;
     city: string;
@@ -379,5 +379,38 @@ describe('ofcIndexedDB - bindStore full API coverage', () => {
     const cleared = await Bound.clear();
     expect(cleared).toBe(true);
     expect(await Bound.count()).toBe(0);
+  });
+});
+
+// -------------------------------------------------------
+// close() coverage (newly added)
+// -------------------------------------------------------
+describe('ofcIndexedDB - close() coverage', () => {
+  const DB_NAME = 'TestDB_Close';
+  const STORE = 'users';
+  const createUserStore = (db: IDBDatabase) => {
+    if (!db.objectStoreNames.contains(STORE)) {
+      db.createObjectStore(STORE, { keyPath: 'id' });
+    }
+  };
+
+  test('close() resolves true when closing a valid DB', async () => {
+    const db = await ofcIndexedDB.connect(DB_NAME, 1, createUserStore);
+    const result = await ofcIndexedDB.close(db);
+    expect(result).toBe(true);
+  });
+
+  test('close() resolves false when called with null', async () => {
+    const result = await ofcIndexedDB.close(null);
+    expect(result).toBe(false);
+  });
+
+  test('close() rejects when db.close() throws', async () => {
+    const db = await ofcIndexedDB.connect(DB_NAME, 1, createUserStore);
+    const spy = jest.spyOn(db, 'close').mockImplementation(() => {
+      throw new Error('close failed');
+    });
+    await expect(ofcIndexedDB.close(db)).rejects.toThrow('Failed to close IndexedDB connection');
+    spy.mockRestore();
   });
 });

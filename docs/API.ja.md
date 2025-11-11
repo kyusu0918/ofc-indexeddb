@@ -32,7 +32,7 @@ export interface OfcRec {
 | **`createStore`** | オブジェクトストア作成関数を実行します。`connect`内の`onupgradeneeded`での使用を想定。 | `db`: DBオブジェクト<br>`createFunc`: ストア作成関数 | `void` |
 | **`drop`** | データベース全体を削除します。 | `name?`: 削除するDB名 | `Promise<boolean>` (成功時 `true`) |
 | **`clear`** | 指定されたオブジェクトストア内の全レコードを削除（TRUNCATE）します。 | `db`: DBオブジェクト<br>`store`: ストア名 | `Promise<boolean>` (成功時 `true`) |
-
+| **`close`** | 現在のデータベース接続を安全に閉じます。データベースが不要になったタイミング（例：テスト終了時や複数DBを切り替えるアプリなど）で、明示的にリソースを解放するために使用します。 | `db`: データベースオブジェクト（または null） | `Promise<boolean>`（成功時は `true`、スキップ時は `false` を返す） |
 ```typescript
 // 接続例
 const db = await ofcIndexedDB.connect(

@@ -1,5 +1,10 @@
 # 🗂️ ofc-indexeddb
 
+[![npm version](https://img.shields.io/npm/v/@kyusu0918/ofc-indexeddb.svg?logo=npm)](https://www.npmjs.com/package/@kyusu0918/ofc-indexeddb)
+[![npm downloads](https://img.shields.io/npm/dm/@kyusu0918/ofc-indexeddb.svg)](https://www.npmjs.com/package/@kyusu0918/ofc-indexeddb)
+[![License](https://img.shields.io/npm/l/@kyusu0918/ofc-indexeddb.svg)](https://github.com/kyusu0918/ofc-indexeddb/blob/main/LICENSE)
+[![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue.svg?logo=typescript)](https://www.typescriptlang.org/)
+
 **Type-safe, zero-dependency IndexedDB wrapper for TypeScript**  
 **with logical delete, async CRUD, and typed store factories.**  
 by **Kei Yusu (Oresama Foundation Code)**
@@ -287,7 +292,7 @@ Example result (indicating full functionality and high coverage):
 
 -----------------|---------|----------|---------|---------
 File             | % Stmts | % Branch | % Funcs | % Lines
-ofcIndexedDB.ts  |  86.92  |   81.7   |  76.19  |  95.23
+ofcIndexedDB.ts  |  87.65  |   82.14  |  76.92  |  95.55
 ```
 
 ---
@@ -326,5 +331,14 @@ MIT © Kei Yusu  
 Part of the **Oresama Foundation Code** series.
 
 ---
+
+## [1.1.0] - 2025-11-11
+### Added
+- Added `close()` to safely close an IndexedDB connection.
+- Full test coverage for success, null, and error cases.
+
+### Notes
+- Fully backward compatible with v1.0.x.
+
 
 _“Typed. Simple. Persistent. — A new standard for type-safe browser storage.”_
