@@ -6,10 +6,10 @@
 
 ## 🗂️ ベースインターフェース
 
-データベースに格納するすべてのデータモデルは、以下のメタデータを持つ **`iofcRec`** インターフェースを継承する必要があります。
+データベースに格納するすべてのデータモデルは、以下のメタデータを持つ **`OfcRec`** インターフェースを継承する必要があります。
 
 ```typescript
-export interface iofcRec {
+export interface OfcRec {
   id: string;       // レコードの一意なID (crypto.randomUUIDで自動生成)
   inserted: string; // 挿入日時 (ISO 8601形式で自動生成)
   updated: string;  // 更新日時 (ISO 8601形式で自動更新)
@@ -51,7 +51,7 @@ const db = await ofcIndexedDB.connect(
 
 | メソッド名 | 概要 | 引数 | 戻り値 |
 | :--- | :--- | :--- | :--- |
-| **`upsert<T>`** | レコードの挿入または更新（IDが存在しない場合は挿入、存在する場合は更新）を行います。 | `db`: DBオブジェクト<br>`store`: ストア名<br>`rec`: 挿入/更新レコード（`iofcRec`を継承）<br>`options?`: ID/日時生成関数、Proxy解除フラグなど | `Promise<string>` (レコードID) |
+| **`upsert<T>`** | レコードの挿入または更新（IDが存在しない場合は挿入、存在する場合は更新）を行います。 | `db`: DBオブジェクト<br>`store`: ストア名<br>`rec`: 挿入/更新レコード（`OfcRec`を継承）<br>`options?`: ID/日時生成関数、Proxy解除フラグなど | `Promise<string>` (レコードID) |
 | **`get<T>`** | IDまたはインデックスキーを使用して単一のレコードを取得します。 | `db`: DBオブジェクト<br>`store`: ストア名<br>`key`: 検索キー（IDまたはインデックスキー）<br>`index?`: 使用するインデックス名 | `Promise<T>` (見つからない場合は `{}` を返却) |
 | **`list<T>`** | 範囲（Range）を指定して複数のレコードを配列として取得します。 | `db`: DBオブジェクト<br>`store`: ストア名<br>`index?`: 使用するインデックス名<br>`from?`: 範囲の開始キー<br>`to?`: 範囲の終了キー | `Promise<T[]>` |
 | **`select<T>`** | 条件関数（`where`）を使用して、レコードをフィルタリング（WHERE句相当）して取得します。 | `db`: DBオブジェクト<br>`store`: ストア名<br>`where`: 条件関数 (`(record: T) => boolean`)<br>`options.includeDeleted?`: 論理削除済みレコードを含めるか | `Promise<T[]>` |

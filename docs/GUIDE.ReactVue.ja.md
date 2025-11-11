@@ -23,9 +23,9 @@ ID・タイムスタンプ・論理削除（soft delete）を自動的に処理�
 ```ts
 // useUsersStore.ts
 import { useEffect, useState } from "react";
-import ofcIndexedDB, { iofcRec, tofcStore } from "@kyusu0918/ofc-indexeddb";
+import ofcIndexedDB, { OfcRec, OfcBoundStore } from "@kyusu0918/ofc-indexeddb";
 
-interface iUser extends iofcRec {
+interface iUser extends OfcRec {
   name: string;
   age: number;
 }
@@ -40,7 +40,7 @@ const createStoreV1 = (db: IDBDatabase) => {
 ```ts
 export function useUsersStore() {
   const [users, setUsers] = useState<iUser[]>([]);
-  const [store, setStore] = useState<tofcStore<iUser> | null>(null);
+  const [store, setStore] = useState<OfcBoundStore<iUser> | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -53,7 +53,7 @@ export function useUsersStore() {
     })();
   }, []);
 
-  async function add(user: Omit<iUser, keyof iofcRec>) {
+  async function add(user: Omit<iUser, keyof OfcRec>) {
     if (!store) return;
     await store.upsert(user as iUser); // ID and timestamps auto-managed
     setUsers(await store.select());
@@ -102,9 +102,9 @@ export function UserList() {
 ```ts
 // useUsersStore.ts
 import { ref, onMounted } from "vue";
-import ofcIndexedDB, { iofcRec, tofcStore } from "@kyusu0918/ofc-indexeddb";
+import ofcIndexedDB, { OfcRec, OfcBoundStore } from "@kyusu0918/ofc-indexeddb";
 
-interface iUser extends iofcRec {
+interface iUser extends OfcRec {
   name: string;
   age: number;
 }
@@ -119,7 +119,7 @@ const createStoreV1 = (db: IDBDatabase) => {
 ```ts
 export function useUsersStore() {
   const users = ref<iUser[]>([]);
-  let store: tofcStore<iUser> | null = null;
+  let store: OfcBoundStore<iUser> | null = null;
 
   onMounted(async () => {
     const db = await ofcIndexedDB.connect("AppDB", 1, createStoreV1);
@@ -127,7 +127,7 @@ export function useUsersStore() {
     users.value = await store.select();
   });
 
-  async function add(user: Omit<iUser, keyof iofcRec>) {
+  async function add(user: Omit<iUser, keyof OfcRec>) {
     if (!store) return;
     await store.upsert(user as iUser);
     users.value = await store.select();

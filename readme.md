@@ -124,13 +124,13 @@ npm install @kyusu0918/ofc-indexeddb
 
 ### 1️⃣ Define Data Models & Schema
 
-All data models must extend `iofcRec` to inherit metadata fields (`id`, `inserted`, `updated`, `deleted`, `is_delete`).
+All data models must extend `OfcRec` to inherit metadata fields (`id`, `inserted`, `updated`, `deleted`, `is_delete`).
 
 ```typescript
-import ofcIndexedDB, { iofcRec } from '@kyusu0918/ofc-indexeddb';
+import ofcIndexedDB, { OfcRec } from '@kyusu0918/ofc-indexeddb';
 
-// Define Data Model (must extend iofcRec)
-interface iUser extends iofcRec {
+// Define Data Model (must extend OfcRec)
+interface iUser extends OfcRec {
   name: string;
   age: number;
 }

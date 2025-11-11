@@ -6,10 +6,10 @@
 
 ## 🗂️ Base Interface
 
-All data models stored in the database must extend the **`iofcRec`** interface, which includes the following metadata fields:
+All data models stored in the database must extend the **`OfcRec`** interface, which includes the following metadata fields:
 
 ```typescript
-export interface iofcRec {
+export interface OfcRec {
   id: string;       // Unique record ID (auto-generated using crypto.randomUUID)
   inserted: string; // Insertion datetime (auto-generated in ISO 8601 format)
   updated: string;  // Update datetime (auto-updated in ISO 8601 format)
@@ -51,7 +51,7 @@ const db = await ofcIndexedDB.connect(
 
 | Method Name | Description | Arguments | Returns |
 | :--- | :--- | :--- | :--- |
-| **`upsert<T>`** | Inserts or updates a record (Insert if ID does not exist, Update if ID exists). | `db`: DB object<br>`store`: Store name<br>`rec`: Record to insert/update (must extend `iofcRec`)<br>`options?`: Options for ID/datetime generation, Proxy unwrap flag, etc. | `Promise<string>` (Record ID) |
+| **`upsert<T>`** | Inserts or updates a record (Insert if ID does not exist, Update if ID exists). | `db`: DB object<br>`store`: Store name<br>`rec`: Record to insert/update (must extend `OfcRec`)<br>`options?`: Options for ID/datetime generation, Proxy unwrap flag, etc. | `Promise<string>` (Record ID) |
 | **`get<T>`** | Retrieves a single record using the ID or an index key. | `db`: DB object<br>`store`: Store name<br>`key`: Search key (ID or index key)<br>`index?`: Name of the index to use | `Promise<T>` (returns `{}` if not found) |
 | **`list<T>`** | Retrieves multiple records as an array, optionally by specifying a key range. | `db`: DB object<br>`store`: Store name<br>`index?`: Name of the index to use<br>`from?`: Start key of the range<br>`to?`: End key of the range | `Promise<T[]>` |
 | **`select<T>`** | Filters records (WHERE clause equivalent) using a condition function and retrieves the matching array. | `db`: DB object<br>`store`: Store name<br>`where`: Condition function (`(record: T) => boolean`)<br>`options.includeDeleted?`: Flag to include logically deleted records | `Promise<T[]>` |
