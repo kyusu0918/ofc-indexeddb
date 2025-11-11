@@ -638,6 +638,48 @@ export const ofcIndexedDB = {
   },
 
   /********************************************************************************
+   * Close Database Connection
+   *
+   * @param db - IDBDatabase instance
+   * @returns Promise<boolean> - true if closed successfully
+   * @throws Error when the database cannot be closed
+   * @since 2025/11/11
+   * @auth Kei Yusu
+   *********************************************************************************/
+  close: async (db: IDBDatabase | null): Promise<boolean> => {
+
+    // Wrap in Promise
+    return new Promise<boolean>((resolve, reject) => {
+
+      try {
+
+        if (!db) {
+
+          console.warn("[ofcIndexedDB] close skipped: db is null");
+
+          // Deletion failure event
+          resolve(false);
+
+          return;
+
+        }
+
+        db.close();
+
+        // Deletion success event
+        resolve(true);
+
+      } catch (e) {
+
+        // Deletion failure event
+        reject(new Error("Failed to close IndexedDB connection."));
+
+      }
+    });
+
+  },
+
+  /********************************************************************************
    * Define Store (Type-safe shortcut generation)
    *
    * @param store Object store name

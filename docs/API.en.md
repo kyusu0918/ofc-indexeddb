@@ -32,6 +32,7 @@ All functionality of the library is provided through the static object **`ofcInd
 | **`createStore`** | Executes the object store creation function. Intended for use within the `onupgradeneeded` callback of `connect`. | `db`: DB object<br>`createFunc`: Store creation function | `void` |
 | **`drop`** | Deletes the entire database. | `name?`: Name of the DB to drop | `Promise<boolean>` (returns `true` on success) |
 | **`clear`** | Deletes all records (TRUNCATE equivalent) from the specified object store. | `db`: DB object<br>`store`: Store name | `Promise<boolean>` (returns `true` on success) |
+| **`close`** | Closes the current database connection safely. Use this to explicitly release resources when the DB is no longer needed (e.g., test teardown or multi-DB apps). | `db`: DB object (or null) | `Promise<boolean>` (returns `true` on success, `false` if skipped) |
 
 ```typescript
 // Connection example

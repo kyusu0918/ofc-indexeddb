@@ -1,6 +1,6 @@
 {
   "name": "@kyusu0918/ofc-indexeddb",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "A type-safe IndexedDB wrapper for TypeScript that provides typed store factories, simple CRUD methods and built-in logical delete support.",
   "main": "dist/ofcIndexedDB.js",
   "types": "dist/ofcIndexedDB.d.ts",
