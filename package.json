@@ -12,6 +12,7 @@
   },
   "scripts": {
     "build": "tsc",
+    "pack:local": "npm run build && npm pack",
     "prepublishOnly": "npm run build",
     "test": "jest",
     "test:coverage": "jest --coverage"
