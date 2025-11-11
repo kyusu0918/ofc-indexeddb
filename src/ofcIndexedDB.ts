@@ -7,8 +7,9 @@
  * @author Kei Yusu
  * 
  *********************************************************************************/
+
 // Base record interface
-export interface iofcRec {
+export interface OfcRec {
   id: string;
   inserted: string;
   updated: string;
@@ -16,8 +17,13 @@ export interface iofcRec {
   is_delete: boolean;
 }
 
-// Type helper
-export type tofcStore<T extends iofcRec> = ReturnType<
+// Type helper(defineStore)
+export type OfcDefinedStore<T extends OfcRec> = ReturnType<
+  typeof ofcIndexedDB.defineStore<T>
+>;
+
+// Type helper(bindStore)
+export type OfcBoundStore<T extends OfcRec> = ReturnType<
   typeof ofcIndexedDB.bindStore<T>
 >;
 
@@ -267,7 +273,7 @@ export const ofcIndexedDB = {
    * @author Kei Yusu
    *
    *********************************************************************************/
-  list: async <T extends iofcRec>(
+  list: async <T extends OfcRec>(
     db: IDBDatabase,
     store: string,
     index?: string|undefined,
@@ -355,7 +361,7 @@ export const ofcIndexedDB = {
    * record => record.title.includes("Travel") && !record.is_delete
    * );
    *********************************************************************************/
-  select: async <T extends iofcRec>(
+  select: async <T extends OfcRec>(
     db: IDBDatabase,
     store: string,
     where: (rec: T) => boolean,
@@ -462,7 +468,7 @@ export const ofcIndexedDB = {
    * now: ofcDateTime.getNowDateTimeString
    * });
    *********************************************************************************/
-  upsert: async <T extends iofcRec>(
+  upsert: async <T extends OfcRec>(
     db: IDBDatabase,
     store: string,
     rec: Partial<T> & { id?: T["id"] },
@@ -486,10 +492,10 @@ export const ofcIndexedDB = {
     let mergeRec = { ...upsertRec } as T;
 
     // If ID is specified
-    if((upsertRec as iofcRec).id){
+    if((upsertRec as OfcRec).id){
 
       // Get existing record
-      const existRec = await ofcIndexedDB.get<T>(db, store, (upsertRec as iofcRec).id);
+      const existRec = await ofcIndexedDB.get<T>(db, store, (upsertRec as OfcRec).id);
 
       // If existing record found
       if(existRec.id){
@@ -502,19 +508,19 @@ export const ofcIndexedDB = {
     }
 
     // Set ID
-    (mergeRec as iofcRec).id = !(mergeRec as iofcRec).id ? genId() : (mergeRec as iofcRec).id;
+    (mergeRec as OfcRec).id = !(mergeRec as OfcRec).id ? genId() : (mergeRec as OfcRec).id;
 
     // Set insertion date/time
-    (mergeRec as iofcRec).inserted = !(mergeRec as iofcRec).inserted ? now() : (mergeRec as iofcRec).inserted;
+    (mergeRec as OfcRec).inserted = !(mergeRec as OfcRec).inserted ? now() : (mergeRec as OfcRec).inserted;
 
     // Set update date/time
-    (mergeRec as iofcRec).updated = (upsertRec as iofcRec).updated ? (upsertRec as iofcRec).updated : now();
+    (mergeRec as OfcRec).updated = (upsertRec as OfcRec).updated ? (upsertRec as OfcRec).updated : now();
 
     // Set deletion date/time (blank for extension)
-    (mergeRec as iofcRec).deleted = !(mergeRec as iofcRec).deleted ? "" : (mergeRec as iofcRec).deleted;
+    (mergeRec as OfcRec).deleted = !(mergeRec as OfcRec).deleted ? "" : (mergeRec as OfcRec).deleted;
 
     // Set deletion flag (False for extension)
-    (mergeRec as iofcRec).is_delete = !(mergeRec as iofcRec).is_delete ? false : (mergeRec as iofcRec).is_delete;
+    (mergeRec as OfcRec).is_delete = !(mergeRec as OfcRec).is_delete ? false : (mergeRec as OfcRec).is_delete;
 
     // Get object store
     const objectStore: IDBObjectStore = db.transaction(store, "readwrite").objectStore(store);
@@ -526,7 +532,7 @@ export const ofcIndexedDB = {
       const request:IDBRequest = objectStore.put(mergeRec);
 
       // Add/update success event
-      request.onsuccess = (e: Event) => { resolve((mergeRec as iofcRec).id); };
+      request.onsuccess = (e: Event) => { resolve((mergeRec as OfcRec).id); };
 
       // Add/update failure event
       request.onerror = (e: Event) => { reject(new Error("Failed to insert/update record.")); };
@@ -568,7 +574,7 @@ export const ofcIndexedDB = {
     if (logical) {
 
       // Update record
-      await ofcIndexedDB.upsert<iofcRec>(db, store, {id: key as string, is_delete: true, deleted: now() }, {now});
+      await ofcIndexedDB.upsert<OfcRec>(db, store, {id: key as string, is_delete: true, deleted: now() }, {now});
 
       // Set return value
       return true;
@@ -649,7 +655,7 @@ export const ofcIndexedDB = {
    * const list = await Titles.select(db, r => !r.is_delete);
    * await Titles.delete(db, "001"); 
    *********************************************************************************/
-  defineStore: <T extends iofcRec>(
+  defineStore: <T extends OfcRec>(
     store: string,
     defaults?: {
       genId?: () => string;
@@ -715,7 +721,7 @@ export const ofcIndexedDB = {
    * // Use without passing 'db'
    * const list = await Users.list();
    *********************************************************************************/
-  bindStore: <T extends iofcRec>(
+  bindStore: <T extends OfcRec>(
     db: IDBDatabase,
     store: string,
     defaults?: {
