@@ -288,7 +288,7 @@ Example result (indicating full functionality and high coverage):
 
 ```
  PASS  tests/ofcIndexedDB.test.ts
-  Tests:        22 passed, 22 total
+  Tests:        25 passed, 25 total
 
 -----------------|---------|----------|---------|---------
 File             | % Stmts | % Branch | % Funcs | % Lines
@@ -337,8 +337,9 @@ Part of the **Oresama Foundation Code** series.
 - Added `close()` to safely close an IndexedDB connection.
 - Full test coverage for success, null, and error cases.
 
-### Notes
-- Fully backward compatible with v1.0.x.
+## [1.1.1] - 2025-11-12
+### Changed
 
+- defineStore() now defaults logicalDelete to **false** when the option is omitted.
 
 _“Typed. Simple. Persistent. — A new standard for type-safe browser storage.”_
