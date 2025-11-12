@@ -709,7 +709,7 @@ export const ofcIndexedDB = {
     // Define default functions (secured within scope)
     const genId = defaults?.genId ?? (() => crypto.randomUUID());
     const now = defaults?.now ?? (() => new Date().toISOString());
-    const logicalDelete = defaults?.logicalDelete ?? true;
+    const logicalDelete = defaults?.logicalDelete ?? false;
 
     // Set return value
     return {
